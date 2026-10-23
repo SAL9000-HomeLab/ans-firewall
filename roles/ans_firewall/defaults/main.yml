@@ -1,0 +1,52 @@
+---
+# roles/ans_firewall/defaults/main.yml
+
+# --- Global toggles ---
+ans_firewall_enable_firewall_rules: true
+ans_firewall_enable_rdp_rules: true
+ans_firewall_enable_remoteadmin_rules: true
+ans_firewall_disable_builtin_rules: true
+ans_firewall_enable_ssh_rules: true
+ans_firewall_enable_mssql_rules: false   # opt-in: only enable on hosts running SQL Server
+
+# --- Common group/prefix for rules we manage ---
+ans_firewall_group: ANS_remoteadmin_base     # group used by remoteadmin-rules.yml only
+ans_firewall_rule_prefix_rem: "ANS-RemAdm"
+ans_firewall_rule_prefix_mssql: "ANS-SQL"   # e.g., ANS-SQL-In-TCP
+
+# --- RDP management rule group ---
+# Replaces the built-in RDP rules with ones scoped to ans_firewall_mgmt_ips.
+ans_firewall_rdp_mgmt_group: ANS_rdp_mgmt
+
+# --- SQL Server rule group/ports ---
+ans_firewall_mssql_group: ANS_mssql
+ans_firewall_mssql_display_prefix: "ANS - Microsoft SQL Server"
+ans_firewall_mssql_tcp_ports:
+  - 1433
+  - 1434
+  - 1435
+  - 5022
+ans_firewall_mssql_udp_ports:
+  - 1434
+  - 3343
+
+# --- Profiles to apply (Domain, Private, Public) ---
+ans_firewall_profile:
+  - Domain
+  - Private
+  - Public
+
+# --- Management IPs (allowlist for inbound access) ---
+# Required when RDP, RemoteAdmin or SSH rules are enabled: the addresses allowed in, reused by the RDP and
+# RemoteAdmin rules. Set the real list on the AWX inventory or group, e.g. [192.0.2.10, 192.0.2.11]; the role
+# fails rather than creating rules without a remote-address scope.
+ans_firewall_mgmt_ips: []
+
+# --- SSH allowlist (= mgmt IPs + these) ---
+# Extra addresses allowed SSH only, such as a monitoring server.
+ans_firewall_ssh_extra_ips: []
+
+ans_firewall_ssh_ips: "{{ (ans_firewall_mgmt_ips + ans_firewall_ssh_extra_ips) | unique }}"
+
+# --- SSH rule group ---
+ans_firewall_ssh_group: ANS_ssh

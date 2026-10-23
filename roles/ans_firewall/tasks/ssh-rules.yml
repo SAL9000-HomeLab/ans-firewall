@@ -1,0 +1,20 @@
+---
+# ---------- SSH rules ----------
+# Allows SSH only from ans_firewall_ssh_ips (management IPs + ans_firewall_ssh_extra_ips).
+
+- name: DEFOS | Firewall | Apply SSH rule
+  community.windows.win_firewall_rule:
+    name: ANS-OpenSSH-Server-In-TCP
+    display_name: "OpenSSH Server (sshd)"
+    description: "Firewall rule allowing SSH access. [TCP 22]"
+    group: "{{ ans_firewall_ssh_group }}"
+    direction: in
+    action: allow
+    enabled: true
+    profiles: "{{ ans_firewall_profile }}"
+    protocol: TCP
+    localport: "22"
+    remoteip: "{{ ans_firewall_ssh_ips | join(',') }}"
+    state: present
+  when: ans_firewall_enable_ssh_rules | bool
+  tags: [firewall, ssh]

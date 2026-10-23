@@ -1,0 +1,11 @@
+Datagram
+DEFOS
+LLMNR
+localport
+mgmt
+remoteadmin
+remoteip
+remoteport
+RPCSS
+svchost
+VDSLDR

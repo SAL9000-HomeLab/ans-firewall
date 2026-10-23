@@ -1,0 +1,48 @@
+---
+# ---------- RDP management rules ----------
+# Disables the built-in RDP rules (already handled by disable-builtins.yml)
+# and replaces them with versions scoped to ans_firewall_mgmt_ips.
+
+- name: DEFOS | Firewall | Define RDP management rule set
+  ansible.builtin.set_fact:
+    ans_firewall_firewall_rules_rdp_mgmt:
+      - { name: "ANS-Mgmt-RemoteDesktop-UserMode-In-TCP",
+          display: "Remote Desktop - User Mode (TCP-In)",
+          desc: "Inbound rule for the Remote Desktop service to allow RDP traffic. [TCP 3389]",
+          program: "%systemroot%\\system32\\svchost.exe",
+          protocol: "TCP", localport: "3389" }
+
+      - { name: "ANS-RemoteDesktop-UserMode-In-UDP",
+          display: "Remote Desktop - User Mode (UDP-In)",
+          desc: "Inbound rule for the Remote Desktop service to allow RDP traffic. [UDP 3389]",
+          program: "%systemroot%\\system32\\svchost.exe",
+          protocol: "UDP", localport: "3389" }
+
+      # Shadow over TCP - keep ANY port, program-scoped
+      - { name: "ANS-RemoteDesktop-Shadow-In-TCP",
+          display: "Remote Desktop - Shadow (TCP-In)",
+          desc: "Inbound rule for the Remote Desktop service to allow shadowing of an existing Remote Desktop session",
+          program: "%systemroot%\\system32\\svchost.exe",
+          protocol: "TCP" }
+  when: ans_firewall_enable_rdp_rules | bool
+  tags: [firewall, rdp]
+
+- name: DEFOS | Firewall | Apply RDP management rules
+  community.windows.win_firewall_rule:
+    name: "{{ item.name }}"
+    display_name: "{{ item.display }}"
+    description: "{{ item.desc }}"
+    group: "{{ ans_firewall_rdp_mgmt_group }}"
+    direction: in
+    action: allow
+    enabled: true
+    profiles: "{{ ans_firewall_profile }}"
+    program: "{{ item.program }}"
+    protocol: "{{ item.protocol }}"
+    remoteip: "{{ ans_firewall_mgmt_ips | join(',') }}"
+    localport: "{{ item.localport | default(omit) }}"
+    state: present
+  loop: "{{ ans_firewall_firewall_rules_rdp_mgmt }}"
+  loop_control: { label: "{{ item.name }}" }
+  when: ans_firewall_enable_rdp_rules | bool
+  tags: [firewall, rdp]

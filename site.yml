@@ -1,0 +1,8 @@
+---
+# Applies the managed Windows Firewall rules to every host in the windows group.
+# Limit to one rule set with tags: builtin, rdp, remoteadmin, ssh, mssql.
+
+- name: Configure Windows Firewall
+  hosts: windows
+  roles:
+    - role: ans_firewall

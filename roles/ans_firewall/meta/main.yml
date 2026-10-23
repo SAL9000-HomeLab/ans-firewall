@@ -1,0 +1,18 @@
+---
+galaxy_info:
+  author: Roland Serman
+  description: Windows Firewall rules scoped to a management IP allowlist (RDP, remote admin, SSH, SQL Server)
+  license: MIT
+  min_ansible_version: "2.16"
+  platforms:
+    - name: Windows
+      versions:
+        - "2019"
+        - "2022"
+        - "2025"
+  galaxy_tags:
+    - windows
+    - firewall
+    - security
+
+dependencies: []
