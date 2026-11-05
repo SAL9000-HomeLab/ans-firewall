@@ -1,7 +1,7 @@
 ---
 # ---------- RDP management rules ----------
-# Versions of the built-in RDP rules scoped to ans_firewall_mgmt_ips. Removed when
-# ans_firewall_enable_rdp_rules is false. disable-builtins.yml turns the built-ins off afterwards.
+# Versions of the built-in RDP rules. Port 3389 is scoped to ans_firewall_rdp_ips and Shadow to ans_firewall_mgmt_ips.
+# Removed when ans_firewall_enable_rdp_rules is false. disable-builtins.yml turns the built-ins off afterwards.
 
 - name: DEFOS | Firewall | Define RDP management rule set
   ansible.builtin.set_fact:
@@ -16,11 +16,12 @@
           program: "%systemroot%\\system32\\svchost.exe",
           protocol: "UDP", localport: "3389" }
 
-      # Shadow over TCP - keep ANY port, program-scoped
+      # Shadow over TCP - keep ANY port, program-scoped. Any port on svchost.exe is more than RDP, so this stays
+      # limited to the management addresses.
       - { name: "ANS-RemoteDesktop-Shadow-In-TCP",
           desc: "Inbound rule for the Remote Desktop service to allow shadowing of an existing Remote Desktop session",
           program: "%systemroot%\\system32\\svchost.exe",
-          protocol: "TCP" }
+          protocol: "TCP", mgmt_only: true }
   tags: [firewall, rdp]
 
 - name: DEFOS | Firewall | Apply RDP management rules
@@ -34,7 +35,9 @@
     profiles: "{{ ans_firewall_profile }}"
     program: "{{ item.program }}"
     protocol: "{{ item.protocol }}"
-    remoteip: "{{ (ans_firewall_mgmt_ips | join(',')) if ans_firewall_enable_rdp_rules | bool else omit }}"
+    remoteip: >-
+      {{ ((ans_firewall_mgmt_ips if item.mgmt_only | default(false) else ans_firewall_rdp_ips) | join(','))
+      if ans_firewall_enable_rdp_rules | bool else omit }}
     localport: "{{ item.localport | default(omit) }}"
     state: "{{ 'present' if ans_firewall_enable_rdp_rules | bool else 'absent' }}"
   loop: "{{ ans_firewall_firewall_rules_rdp_mgmt }}"

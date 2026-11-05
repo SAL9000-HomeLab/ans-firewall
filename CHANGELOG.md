@@ -5,6 +5,7 @@ pushing a `vX.Y.Z` tag; the release workflow publishes the matching section.
 
 ## [Unreleased]
 
+- Added: `ans_firewall_rdp_extra_ips` allows addresses RDP on port 3389 without the other management ports.
 - Added: Linux support with firewalld on RHEL/Rocky 9 and 10, off by default (`ans_firewall_firewalld_enabled`). SSH is
   limited to the allowlist with rich rules, and the open `ssh` and `cockpit` services are removed from the zone.
 - Fixed: The allowlist did not cover WinRM on hosts built by `vm-templates` and `proxmox-deploy`, whose `WinRM-HTTP` and
