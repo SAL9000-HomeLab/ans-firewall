@@ -5,7 +5,8 @@
 # remote management, File & Printer Sharing, ICMP. Removed when
 # ans_firewall_enable_remoteadmin_rules is false. disable-builtins.yml turns the built-ins off afterwards.
 
-# NOTE: All RPC/RPCSS aliases must be numeric; use TCP 135 for RPC endpoint mapper.
+# RPC and RPC-EPMap are the firewall API's port keywords. New-NetFirewallRule spells the second one RPCEPMap, which this
+# module rejects with "The data is invalid".
 - name: DEFOS | Firewall | Define RemoteAdmin rule set
   ansible.builtin.set_fact:
     ans_firewall_firewall_rules_remoteadmin:
@@ -15,7 +16,7 @@
           program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPC" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteTask-RPCSS-In-TCP",
           desc: "Inbound rule for the RPCSS service to allow RPC/TCP traffic for the Task Scheduler service.",
-          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPCEPMap" }
+          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPC-EPMap" }
 
       # WinRM
       - { name: "{{ ans_firewall_rule_prefix_rem }}-WINRM-HTTP-In-TCP",
@@ -36,7 +37,7 @@
           program: "%SystemRoot%\\System32\\vdsldr.exe", protocol: "TCP", localport: "RPC" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RVM-RPCSS-In-TCP",
           desc: "Inbound rule for the RPCSS service to allow RPC/TCP traffic for Remote Volume Management.",
-          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPCEPMap" }
+          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPC-EPMap" }
 
       # Remote Event Log Service
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteEventLogSvc-In-TCP",
@@ -47,7 +48,7 @@
           program: "System", protocol: "TCP", localport: "445" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteEventLogSvc-RPCSS-In-TCP",
           desc: "Inbound rule for the RPCSS service to allow RPC/TCP traffic for the local Event Log Service.",
-          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPCEPMap" }
+          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPC-EPMap" }
 
       # Remote Service Management
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteSvcAdmin-In-TCP",
@@ -58,7 +59,7 @@
           program: "System", protocol: "TCP", localport: "445" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteSvcAdmin-RPCSS-In-TCP",
           desc: "Inbound rule for the RPCSS service to allow RPC/TCP traffic for the local Service Control Manager.",
-          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPCEPMap" }
+          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPC-EPMap" }
 
       # Windows Firewall Remote Mgmt
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteFwAdmin-In-TCP",
@@ -66,7 +67,7 @@
           program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPC" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteFwAdmin-RPCSS-In-TCP",
           desc: "Inbound rule for the RPCSS service to allow RPC/TCP traffic for the Windows Firewall.",
-          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPCEPMap" }
+          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPC-EPMap" }
 
       # ICMP allow (mgmt scope)
       - { name: "{{ ans_firewall_rule_prefix_rem }}-ICMPAllow",
@@ -90,7 +91,7 @@
           program: "System", protocol: "UDP", localport: "138" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-FPS-RPCSS-In-TCP",
           desc: "Inbound rule for the RPCSS service to allow RPC/TCP traffic for the Spooler Service.",
-          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPCEPMap" }
+          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPC-EPMap" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-FPS-ICMP4-ERQ-In",
           desc: "Echo Request messages are sent as ping requests to other nodes.",
           program: "System", protocol: "ICMPv4", icmp_type_code: ["8:*"] }

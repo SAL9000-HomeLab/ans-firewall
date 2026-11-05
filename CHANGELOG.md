@@ -16,6 +16,8 @@ pushing a `vX.Y.Z` tag; the release workflow publishes the matching section.
 - Fixed: Turning a rule set off left its rules on the host. They are now removed.
 - Fixed: The ICMP rules used `icmp_type`, which `win_firewall_rule` does not have and ignored, so they allowed every
   ICMPv4 type. They now use `icmp_type_code` and allow echo requests only.
+- Fixed: The RPC endpoint mapper rules failed with "The data is invalid" on a real host. `win_firewall_rule` needs the
+  port keyword `RPC-EPMap`, not `RPCEPMap`, which is the spelling `New-NetFirewallRule` uses.
 - Removed: `display_name` on the rules and `ans_firewall_mssql_display_prefix`. The module ignored them; rules are shown
   by their `name`.
 - Added: `ans_firewall_mssql_ips` limits the SQL Server rules to an allowlist. Empty, the default, means any address.
