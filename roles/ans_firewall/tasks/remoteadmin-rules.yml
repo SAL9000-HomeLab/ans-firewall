@@ -2,21 +2,8 @@
 # ---------- RemoteAdmin rules ----------
 # General Windows remote administration: Task Scheduler, WinRM, Remote Volume
 # Management, Remote Event Log, Remote Service Management, Windows Firewall
-# remote management, File & Printer Sharing, ICMP. Disabling of the built-in
-# equivalents is handled by disable-builtins.yml.
-
-# (Optional) Validate IP list – requires ansible.utils collection
-- name: DEFOS | Firewall | Validate management IPs (regex + bounds, no deps)
-  ansible.builtin.assert:
-    that:
-      - item is match('^(?:\\d{1,3}\\.){3}\\d{1,3}$')
-      - (item.split('.')[0] | int) <= 255
-      - (item.split('.')[1] | int) <= 255
-      - (item.split('.')[2] | int) <= 255
-      - (item.split('.')[3] | int) <= 255
-    fail_msg: "Invalid IPv4 address in ans_firewall_mgmt_ips: {{ item }}"
-  loop: "{{ ans_firewall_mgmt_ips | default([]) }}"
-  tags: [firewall, validate]
+# remote management, File & Printer Sharing, ICMP. Removed when
+# ans_firewall_enable_remoteadmin_rules is false. disable-builtins.yml turns the built-ins off afterwards.
 
 # NOTE: All RPC/RPCSS aliases must be numeric; use TCP 135 for RPC endpoint mapper.
 - name: DEFOS | Firewall | Define RemoteAdmin rule set
@@ -24,122 +11,97 @@
     ans_firewall_firewall_rules_remoteadmin:
       # Remote Task Scheduler
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteTask-In-TCP",
-          display: "ANS - Remote Scheduled Tasks Management (RPC)",
           desc: "Inbound rule for the Task Scheduler service to be remotely managed via RPC/TCP.",
           program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPC" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteTask-RPCSS-In-TCP",
-          display: "ANS - Remote Scheduled Tasks Management (RPC-EPMAP)",
           desc: "Inbound rule for the RPCSS service to allow RPC/TCP traffic for the Task Scheduler service.",
           program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPCEPMap" }
 
       # WinRM
       - { name: "{{ ans_firewall_rule_prefix_rem }}-WINRM-HTTP-In-TCP",
-          display: "ANS - Windows Remote Management (HTTP-In)",
           desc: "Inbound rule for Windows Remote Management via WS-Management. [TCP 5985]",
           program: "System", protocol: "TCP", localport: "5985" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-WINRM-HTTPS-In-TCP",
-          display: "ANS - Windows Remote Management (HTTPS-In)",
           desc: "Inbound rule for Windows Remote Management via WS-Management. [TCP 5986]",
           program: "System", protocol: "TCP", localport: "5986" }
 
       # Remote Volume Management
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RVM-VDS-In-TCP",
-          display: "ANS - Remote Volume Management - Virtual Disk Service (RPC)",
           desc: "Inbound rule for the Remote Volume Management - Virtual Disk Service to be remotely managed via
             RPC/TCP.",
           program: "%SystemRoot%\\System32\\vds.exe", protocol: "TCP", localport: "RPC" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RVM-VDSLDR-In-TCP",
-          display: "ANS - Remote Volume Management - Virtual Disk Service Loader (RPC)",
           desc: "Inbound rule for the Remote Volume Management - Virtual Disk Service Loader to be remotely managed
             via RPC/TCP.",
           program: "%SystemRoot%\\System32\\vdsldr.exe", protocol: "TCP", localport: "RPC" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RVM-RPCSS-In-TCP",
-          display: "ANS - Remote Volume Management (RPC-EPMAP)",
           desc: "Inbound rule for the RPCSS service to allow RPC/TCP traffic for Remote Volume Management.",
           program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPCEPMap" }
 
       # Remote Event Log Service
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteEventLogSvc-In-TCP",
-          display: "ANS - Remote Event Log Management (RPC)",
           desc: "Inbound rule for the local Event Log service to be remotely managed via RPC/TCP.",
           program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPC" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteEventLogSvc-NP-In-TCP",
-          display: "ANS - Remote Event Log Management (NP-In)",
           desc: "Inbound rule for the local Event Log service to be remotely managed over Named Pipes.",
           program: "System", protocol: "TCP", localport: "445" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteEventLogSvc-RPCSS-In-TCP",
-          display: "ANS - Remote Event Log Management (RPC-EPMAP)",
           desc: "Inbound rule for the RPCSS service to allow RPC/TCP traffic for the local Event Log Service.",
           program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPCEPMap" }
 
       # Remote Service Management
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteSvcAdmin-In-TCP",
-          display: "ANS - Remote Service Management (RPC)",
           desc: "Inbound rule for the local Service Control Manager to be remotely managed via RPC/TCP.",
           program: "%SystemRoot%\\System32\\services.exe", protocol: "TCP", localport: "RPC" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteSvcAdmin-NP-In-TCP",
-          display: "ANS - Remote Service Management (NP-In)",
           desc: "Inbound rule for the local Service Control Manager to be remotely managed over Named Pipes.",
           program: "System", protocol: "TCP", localport: "445" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteSvcAdmin-RPCSS-In-TCP",
-          display: "ANS - Remote Service Management (RPC-EPMAP)",
           desc: "Inbound rule for the RPCSS service to allow RPC/TCP traffic for the local Service Control Manager.",
           program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPCEPMap" }
 
       # Windows Firewall Remote Mgmt
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteFwAdmin-In-TCP",
-          display: "ANS - Windows Firewall Remote Management (RPC)",
           desc: "Inbound rule for the Windows Firewall to be remotely managed via RPC/TCP.",
           program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPC" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-RemoteFwAdmin-RPCSS-In-TCP",
-          display: "ANS - Windows Firewall Remote Management (RPC-EPMAP)",
           desc: "Inbound rule for the RPCSS service to allow RPC/TCP traffic for the Windows Firewall.",
           program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPCEPMap" }
 
       # ICMP allow (mgmt scope)
       - { name: "{{ ans_firewall_rule_prefix_rem }}-ICMPAllow",
-          display: "ANS - ICMP Allow incoming V4 echo request",
           desc: "ICMP Allow incoming V4 echo request",
-          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "ICMPv4", icmp_type: "8" }
+          program: "%SystemRoot%\\System32\\svchost.exe", protocol: "ICMPv4", icmp_type_code: ["8:*"] }
 
       # File & Printer Sharing
       - { name: "{{ ans_firewall_rule_prefix_rem }}-FPS-NB_Session-In-TCP",
-          display: "ANS - File and Printer Sharing (NB-Session-In)",
           desc: "Inbound rule for File and Printer Sharing to allow NetBIOS Session Service connections. [TCP 139]",
           program: "System", protocol: "TCP", localport: "139" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-FPS-SMB-In-TCP",
-          display: "ANS - File and Printer Sharing (SMB-In)",
           desc: "Inbound rule for File and Printer Sharing to allow SMB transmission and reception via Named Pipes.
             [TCP 445]",
           program: "System", protocol: "TCP", localport: "445" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-FPS-NB_Name-In-UDP",
-          display: "ANS - File and Printer Sharing (NB-Name-In)",
           desc: "Inbound rule for File and Printer Sharing to allow NetBIOS Name Resolution. [UDP 137]",
           program: "System", protocol: "UDP", localport: "137" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-FPS-NB_Datagram-In-UDP",
-          display: "ANS - File and Printer Sharing (NB-Datagram-In)",
           desc: "Inbound rule for File and Printer Sharing to allow NetBIOS Datagram transmission and reception. [UDP
             138]",
           program: "System", protocol: "UDP", localport: "138" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-FPS-RPCSS-In-TCP",
-          display: "ANS - File and Printer Sharing (Spooler Service - RPC-EPMAP)",
           desc: "Inbound rule for the RPCSS service to allow RPC/TCP traffic for the Spooler Service.",
           program: "%SystemRoot%\\System32\\svchost.exe", protocol: "TCP", localport: "RPCEPMap" }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-FPS-ICMP4-ERQ-In",
-          display: "ANS - File and Printer Sharing (Echo Request - ICMPv4-In)",
           desc: "Echo Request messages are sent as ping requests to other nodes.",
-          program: "System", protocol: "ICMPv4" }
+          program: "System", protocol: "ICMPv4", icmp_type_code: ["8:*"] }
       - { name: "{{ ans_firewall_rule_prefix_rem }}-FPS-LLMNR-In-UDP",
-          display: "ANS - File and Printer Sharing (LLMNR-UDP-In)",
           desc: "Inbound rule for File and Printer Sharing to allow Link Local Multicast Name Resolution. [UDP 5355]",
           program: "%SystemRoot%\\System32\\svchost.exe", protocol: "UDP", localport: "5355" }
-  when: ans_firewall_enable_remoteadmin_rules | bool
   tags: [firewall, remoteadmin]
 
 - name: DEFOS | Firewall | Apply RemoteAdmin rules
   community.windows.win_firewall_rule:
     name: "{{ item.name }}"
-    display_name: "{{ item.display }}"
     description: "{{ item.desc }}"
     group: "{{ ans_firewall_group }}"
     direction: in
@@ -148,11 +110,10 @@
     profiles: "{{ ans_firewall_profile }}"
     program: "{{ item.program }}"
     protocol: "{{ item.protocol }}"
-    remoteip: "{{ ans_firewall_mgmt_ips | join(',') }}"
+    remoteip: "{{ (ans_firewall_mgmt_ips | join(',')) if ans_firewall_enable_remoteadmin_rules | bool else omit }}"
     localport: "{{ item.localport | default(omit) }}"
-    icmp_type: "{{ item.icmp_type | default(omit) }}"
-    state: present
+    icmp_type_code: "{{ item.icmp_type_code | default(omit) }}"
+    state: "{{ 'present' if ans_firewall_enable_remoteadmin_rules | bool else 'absent' }}"
   loop: "{{ ans_firewall_firewall_rules_remoteadmin }}"
   loop_control: { label: "{{ item.name }}" }
-  when: ans_firewall_enable_remoteadmin_rules | bool
   tags: [firewall, remoteadmin]

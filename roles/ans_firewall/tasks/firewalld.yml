@@ -1,0 +1,84 @@
+---
+# roles/ans_firewall/tasks/firewalld.yml
+#
+# Limits the management services to the allowlist with rich rules in the zone, then takes the open versions of those
+# services out of it. Rich rules, not a source-bound zone: without zone drifting, a host bound to its own zone could
+# not reach anything opened in the interface's zone, such as the ports other roles open.
+
+- name: DEFOS | Firewall | Check firewalld is supported here and has an allowlist
+  ansible.builtin.assert:
+    that:
+      - ansible_facts['os_family'] == 'RedHat'
+      - ans_firewall_ssh_ips | length > 0
+    fail_msg: >-
+      ans_firewall_firewalld_enabled needs a RedHat-family host and a non-empty ans_firewall_mgmt_ips, because
+      removing the open ssh service without an allowlist would lock everyone out.
+    quiet: true
+  tags: [validate]
+
+- name: DEFOS | Firewall | Validate the allowlists
+  ansible.builtin.import_tasks: validate.yml
+  tags: [validate]
+
+- name: DEFOS | Firewall | Install firewalld
+  ansible.builtin.package:
+    name: firewalld
+    state: present
+
+- name: DEFOS | Firewall | Start firewalld
+  ansible.builtin.service:
+    name: firewalld
+    state: started
+    enabled: true
+
+- name: DEFOS | Firewall | Work out the rich rules
+  ansible.builtin.set_fact:
+    ans_firewall__rich_rules: >-
+      {%- set ns = namespace(out=[]) -%}
+      {%- for address in ans_firewall_ssh_ips -%}
+      {%-   for service in ans_firewall_firewalld_mgmt_services -%}
+      {%-     set ns.out = ns.out + ['rule family="ipv4" source address="' ~ address ~ '" service name="' ~ service
+                ~ '" accept'] -%}
+      {%-   endfor -%}
+      {%- endfor -%}
+      {{ ns.out }}
+
+# Added before anything is removed, so the next management connection still has a way in.
+- name: DEFOS | Firewall | Allow the management services from the allowlist
+  ansible.posix.firewalld:
+    zone: "{{ ans_firewall_firewalld_zone }}"
+    rich_rule: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: enabled
+  loop: "{{ ans_firewall__rich_rules }}"
+
+- name: DEFOS | Firewall | Read the rich rules in the zone
+  ansible.builtin.command:
+    argv: [firewall-cmd, --permanent, "--zone={{ ans_firewall_firewalld_zone }}", --list-rich-rules]
+  register: ans_firewall__current_rich_rules
+  changed_when: false
+  check_mode: false
+
+# Only rules for the managed services: rich rules for anything else belong to someone else.
+- name: DEFOS | Firewall | Remove addresses no longer in the allowlist
+  ansible.posix.firewalld:
+    zone: "{{ ans_firewall_firewalld_zone }}"
+    rich_rule: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: disabled
+  loop: >-
+    {{ ans_firewall__current_rich_rules.stdout_lines
+    | select('search', 'service name="(' ~ ans_firewall_firewalld_mgmt_services | join('|') ~ ')"')
+    | reject('in', ans_firewall__rich_rules)
+    | list }}
+
+- name: DEFOS | Firewall | Remove the open versions of the services
+  ansible.posix.firewalld:
+    zone: "{{ ans_firewall_firewalld_zone }}"
+    service: "{{ item }}"
+    permanent: true
+    immediate: true
+    state: disabled
+  loop: "{{ ans_firewall_firewalld_remove_services }}"

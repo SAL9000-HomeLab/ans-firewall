@@ -1,51 +1,32 @@
 ---
-- name: DEFOS | Firewall | Disable built-in rules (if present)
+# roles/ans_firewall/tasks/disable-builtins.yml
+
+# Only the rules a managed set replaces: with a set turned off, its built-ins are left as they are, so turning off
+# RemoteAdmin cannot leave a host with no WinRM rule at all.
+- name: DEFOS | Firewall | Disable the replaced rules (if present)
   ansible.windows.win_powershell:
+    parameters:
+      Names: >-
+        {{ (ans_firewall__builtin_rdp if ans_firewall_enable_rdp_rules | bool else [])
+        + (ans_firewall__builtin_remoteadmin if ans_firewall_enable_remoteadmin_rules | bool else [])
+        + (ans_firewall__builtin_ssh if ans_firewall_enable_ssh_rules | bool else []) }}
+      DisplayNames: >-
+        {{ ans_firewall_winrm_extra_rules if ans_firewall_enable_remoteadmin_rules | bool else [] }}
     script: |
-      $rules = @(
-        # RDP built-ins
-        'RemoteDesktop-UserMode-In-TCP',
-        'RemoteDesktop-UserMode-In-UDP',
-        'RemoteDesktop-Shadow-In-TCP',
-
-        # RemoteAdmin built-ins
-        'RemoteTask-In-TCP',
-        'RemoteTask-RPCSS-In-TCP',
-        'WINRM-HTTP-In-TCP',
-        'WINRM-HTTP-In-TCP-PUBLIC',
-        'RVM-VDS-In-TCP',
-        'RVM-VDSLDR-In-TCP',
-        'RVM-RPCSS-In-TCP',
-        'RemoteEventLogSvc-In-TCP',
-        'RemoteEventLogSvc-NP-In-TCP',
-        'RemoteEventLogSvc-RPCSS-In-TCP',
-        'RemoteSvcAdmin-In-TCP',
-        'RemoteSvcAdmin-NP-In-TCP',
-        'RemoteSvcAdmin-RPCSS-In-TCP',
-        'RemoteFwAdmin-In-TCP',
-        'RemoteFwAdmin-RPCSS-In-TCP',
-        'FPS-NB_Session-In-TCP',
-        'FPS-SMB-In-TCP',
-        'FPS-NB_Name-In-UDP',
-        'FPS-NB_Datagram-In-UDP',
-        'FPS-RPCSS-In-TCP',
-        'FPS-ICMP4-ERQ-In',
-        'FPS-LLMNR-In-UDP',
-
-        # OpenSSH built-in
-        'OpenSSH-Server-In-TCP'
+      [CmdletBinding(SupportsShouldProcess)]
+      param(
+        [string[]]$Names = @(),
+        [string[]]$DisplayNames = @()
       )
 
-      $changed = $false
-      foreach ($n in $rules) {
-        $rule = Get-NetFirewallRule -Name $n -ErrorAction SilentlyContinue
-        if ($null -ne $rule -and $rule.Enabled -ne 'False') {
-          Disable-NetFirewallRule -Name $n -ErrorAction SilentlyContinue | Out-Null
-          $changed = $true
+      $Ansible.Changed = $false
+      $rules = @(
+        foreach ($name in $Names) { Get-NetFirewallRule -Name $name -ErrorAction SilentlyContinue }
+        foreach ($name in $DisplayNames) { Get-NetFirewallRule -DisplayName $name -ErrorAction SilentlyContinue }
+      )
+      foreach ($rule in $rules) {
+        if ($rule.Enabled -ne 'False') {
+          $Ansible.Changed = $true
+          if (-not $Ansible.CheckMode) { $rule | Disable-NetFirewallRule }
         }
       }
-      if ($changed) { 'changed' } else { 'ok' }
-  register: ans_firewall_disable_builtin_result
-  changed_when: >
-    (ans_firewall_disable_builtin_result.output | default([]) | map('lower') | list) is contains('changed')
-  tags: [firewall, builtin]
