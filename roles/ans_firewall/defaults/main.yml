@@ -15,7 +15,7 @@ ans_firewall_rule_prefix_rem: "ANS-RemAdm"
 ans_firewall_rule_prefix_mssql: "ANS-SQL"   # e.g., ANS-SQL-In-TCP
 
 # --- RDP management rule group ---
-# Replaces the built-in RDP rules with ones scoped to ans_firewall_mgmt_ips.
+# Replaces the built-in RDP rules with scoped ones.
 ans_firewall_rdp_mgmt_group: ANS_rdp_mgmt
 
 # --- SQL Server rule group/ports ---
@@ -43,6 +43,12 @@ ans_firewall_profile:
 # [192.0.2.10, 198.51.100.0/24]; the role fails rather than creating rules without a remote-address scope.
 # Include the address Ascender jobs connect from, or the host stops answering them.
 ans_firewall_mgmt_ips: []
+
+# --- RDP allowlist (= mgmt IPs + these) ---
+# Extra addresses allowed RDP on port 3389 only, such as the Kubernetes nodes a remote desktop gateway connects from.
+ans_firewall_rdp_extra_ips: []
+
+ans_firewall_rdp_ips: "{{ (ans_firewall_mgmt_ips + ans_firewall_rdp_extra_ips) | unique }}"
 
 # --- SSH allowlist (= mgmt IPs + these) ---
 # Extra addresses allowed SSH only, such as a monitoring server.
