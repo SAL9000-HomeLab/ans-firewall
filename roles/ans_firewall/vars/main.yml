@@ -1,0 +1,35 @@
+---
+# roles/ans_firewall/vars/main.yml
+# Built-in Windows Firewall rules (by rule name) that the managed rule sets replace.
+
+ans_firewall__builtin_rdp:
+  - RemoteDesktop-UserMode-In-TCP
+  - RemoteDesktop-UserMode-In-UDP
+  - RemoteDesktop-Shadow-In-TCP
+
+ans_firewall__builtin_remoteadmin:
+  - RemoteTask-In-TCP
+  - RemoteTask-RPCSS-In-TCP
+  - WINRM-HTTP-In-TCP
+  - WINRM-HTTP-In-TCP-PUBLIC
+  - RVM-VDS-In-TCP
+  - RVM-VDSLDR-In-TCP
+  - RVM-RPCSS-In-TCP
+  - RemoteEventLogSvc-In-TCP
+  - RemoteEventLogSvc-NP-In-TCP
+  - RemoteEventLogSvc-RPCSS-In-TCP
+  - RemoteSvcAdmin-In-TCP
+  - RemoteSvcAdmin-NP-In-TCP
+  - RemoteSvcAdmin-RPCSS-In-TCP
+  - RemoteFwAdmin-In-TCP
+  - RemoteFwAdmin-RPCSS-In-TCP
+  - FPS-NB_Session-In-TCP
+  - FPS-SMB-In-TCP
+  - FPS-NB_Name-In-UDP
+  - FPS-NB_Datagram-In-UDP
+  - FPS-RPCSS-In-TCP
+  - FPS-ICMP4-ERQ-In
+  - FPS-LLMNR-In-UDP
+
+ans_firewall__builtin_ssh:
+  - OpenSSH-Server-In-TCP

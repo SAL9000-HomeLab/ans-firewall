@@ -5,6 +5,23 @@ pushing a `vX.Y.Z` tag; the release workflow publishes the matching section.
 
 ## [Unreleased]
 
+- Added: Linux support with firewalld on RHEL/Rocky 9 and 10, off by default (`ans_firewall_firewalld_enabled`). SSH is
+  limited to the allowlist with rich rules, and the open `ssh` and `cockpit` services are removed from the zone.
+- Fixed: The allowlist did not cover WinRM on hosts built by `vm-templates` and `proxmox-deploy`, whose `WinRM-HTTP` and
+  `WinRM-HTTPS` rules allow any address. They are now disabled along with the built-ins
+  (`ans_firewall_winrm_extra_rules`).
+- Fixed: Built-in rules were disabled before their replacements existed. They are now disabled last.
+- Fixed: Built-in rules were disabled even for rule sets turned off, which could leave a host with no WinRM rule. They
+  are now left alone for those sets.
+- Fixed: Turning a rule set off left its rules on the host. They are now removed.
+- Fixed: The ICMP rules used `icmp_type`, which `win_firewall_rule` does not have and ignored, so they allowed every
+  ICMPv4 type. They now use `icmp_type_code` and allow echo requests only.
+- Fixed: The RPC endpoint mapper rules failed with "The data is invalid" on a real host. `win_firewall_rule` needs the
+  port keyword `RPC-EPMap`, not `RPCEPMap`, which is the spelling `New-NetFirewallRule` uses.
+- Removed: `display_name` on the rules and `ans_firewall_mssql_display_prefix`. The module ignored them; rules are shown
+  by their `name`.
+- Added: `ans_firewall_mssql_ips` limits the SQL Server rules to an allowlist. Empty, the default, means any address.
+- Changed: Allowlists accept CIDR ranges, and every list is validated, not just `ans_firewall_mgmt_ips`.
 - Changed: `ans_firewall_mgmt_ips` and `ans_firewall_ssh_extra_ips` default to `[]`; the lab addresses are removed
   from the repository and belong on the AWX inventory or group. The role fails when an enabled rule set would have
   an empty allowlist, instead of creating rules open to any address.

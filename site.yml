@@ -1,8 +1,15 @@
 ---
-# Applies the managed Windows Firewall rules to every host in the windows group.
-# Limit to one rule set with tags: builtin, rdp, remoteadmin, ssh, mssql.
+# Applies the firewall rules. Windows hosts get the managed Windows Firewall rules. Linux hosts get firewalld rules
+# only where ans_firewall_firewalld_enabled is set. Limit to one rule set with tags: builtin, rdp, remoteadmin, ssh,
+# mssql, firewalld.
 
-- name: Configure Windows Firewall
+- name: Configure firewalld on Linux hosts
+  hosts: linux
+  become: true
+  roles:
+    - role: ans_firewall
+
+- name: Configure Windows Firewall on Windows hosts
   hosts: windows
   roles:
     - role: ans_firewall

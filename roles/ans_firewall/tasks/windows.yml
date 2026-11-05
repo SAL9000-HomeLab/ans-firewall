@@ -1,0 +1,42 @@
+---
+# roles/ans_firewall/tasks/windows.yml
+
+# An empty allowlist would create rules with no remote-address scope (open to any address).
+- name: DEFOS | Firewall | Check the management IP allowlists
+  ansible.builtin.assert:
+    that:
+      - not (ans_firewall_enable_rdp_rules | bool or ans_firewall_enable_remoteadmin_rules | bool)
+        or ans_firewall_mgmt_ips | length > 0
+      - not ans_firewall_enable_ssh_rules | bool or ans_firewall_ssh_ips | length > 0
+    fail_msg: >-
+      Set ans_firewall_mgmt_ips (and ans_firewall_ssh_extra_ips if needed) on the inventory or group, or turn
+      off the RDP, RemoteAdmin and SSH rules.
+    quiet: true
+  tags: [rdp, remoteadmin, ssh, validate]
+
+- name: DEFOS | Firewall | Validate the allowlists
+  ansible.builtin.import_tasks: validate.yml
+  tags: [rdp, remoteadmin, ssh, mssql, sql, validate]
+
+# The scoped rules go in first and the built-ins are disabled last, so a host always has a rule that lets the next
+# management connection in.
+- name: DEFOS | Firewall | Manage RDP rules
+  ansible.builtin.import_tasks: rdp-rules.yml
+  tags: [rdp]
+
+- name: DEFOS | Firewall | Manage RemoteAdmin rules
+  ansible.builtin.import_tasks: remoteadmin-rules.yml
+  tags: [remoteadmin]
+
+- name: DEFOS | Firewall | Manage SSH rules
+  ansible.builtin.import_tasks: ssh-rules.yml
+  tags: [ssh]
+
+- name: DEFOS | Firewall | Manage SQL Server rules
+  ansible.builtin.import_tasks: mssql-rules.yml
+  tags: [mssql, sql]
+
+- name: DEFOS | Firewall | Disable the rules the scoped ones replace
+  ansible.builtin.import_tasks: disable-builtins.yml
+  when: ans_firewall_disable_builtin_rules | bool
+  tags: [builtin]

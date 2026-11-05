@@ -1,16 +1,15 @@
 ---
 # ---------- SQL Server rules ----------
+# Opt-in. Scoped to ans_firewall_mssql_ips when that is set, otherwise open to any address.
 - name: DEFOS | Firewall | Define SQL Server rule set
   ansible.builtin.set_fact:
     ans_firewall_firewall_rules_mssql:
       - { name: "{{ ans_firewall_rule_prefix_mssql }}-In-TCP",
-          display: "{{ ans_firewall_mssql_display_prefix }} (TCP-In)",
           desc: "SQL Server Database connectivity (TCP-In) [TCP {{ ans_firewall_mssql_tcp_ports | join(', ') }}]",
           protocol: "TCP",
           localport: "{{ ans_firewall_mssql_tcp_ports | join(',') }}" }
 
       - { name: "{{ ans_firewall_rule_prefix_mssql }}-In-UDP",
-          display: "{{ ans_firewall_mssql_display_prefix }} (UDP-In)",
           desc: "SQL Server Database connectivity (UDP-In) [UDP {{ ans_firewall_mssql_udp_ports | join(', ') }}]",
           protocol: "UDP",
           localport: "{{ ans_firewall_mssql_udp_ports | join(',') }}" }
@@ -19,7 +18,6 @@
 - name: DEFOS | Firewall | Apply SQL Server rules
   community.windows.win_firewall_rule:
     name: "{{ item.name }}"
-    display_name: "{{ item.display }}"
     description: "{{ item.desc }}"
     group: "{{ ans_firewall_mssql_group }}"
     direction: in
@@ -28,7 +26,8 @@
     profiles: "{{ ans_firewall_profile }}"
     protocol: "{{ item.protocol }}"
     localport: "{{ item.localport }}"
-    state: present
+    remoteip: "{{ (ans_firewall_mssql_ips | join(',')) if ans_firewall_mssql_ips | length > 0 else omit }}"
+    state: "{{ 'present' if ans_firewall_enable_mssql_rules | bool else 'absent' }}"
   loop: "{{ ans_firewall_firewall_rules_mssql }}"
   loop_control: { label: "{{ item.name }}" }
   tags: [firewall, mssql, sql]

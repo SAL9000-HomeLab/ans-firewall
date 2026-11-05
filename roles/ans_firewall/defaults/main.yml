@@ -20,7 +20,8 @@ ans_firewall_rdp_mgmt_group: ANS_rdp_mgmt
 
 # --- SQL Server rule group/ports ---
 ans_firewall_mssql_group: ANS_mssql
-ans_firewall_mssql_display_prefix: "ANS - Microsoft SQL Server"
+# Addresses allowed to reach SQL Server. Empty means any address.
+ans_firewall_mssql_ips: []
 ans_firewall_mssql_tcp_ports:
   - 1433
   - 1434
@@ -38,8 +39,9 @@ ans_firewall_profile:
 
 # --- Management IPs (allowlist for inbound access) ---
 # Required when RDP, RemoteAdmin or SSH rules are enabled: the addresses allowed in, reused by the RDP and
-# RemoteAdmin rules. Set the real list on the AWX inventory or group, e.g. [192.0.2.10, 192.0.2.11]; the role
-# fails rather than creating rules without a remote-address scope.
+# RemoteAdmin rules. IPv4 addresses or CIDR ranges. Set the real list on the AWX inventory or group, e.g.
+# [192.0.2.10, 198.51.100.0/24]; the role fails rather than creating rules without a remote-address scope.
+# Include the address Ascender jobs connect from, or the host stops answering them.
 ans_firewall_mgmt_ips: []
 
 # --- SSH allowlist (= mgmt IPs + these) ---
@@ -50,3 +52,26 @@ ans_firewall_ssh_ips: "{{ (ans_firewall_mgmt_ips + ans_firewall_ssh_extra_ips) |
 
 # --- SSH rule group ---
 ans_firewall_ssh_group: ANS_ssh
+
+# --- WinRM rules added outside this role (by display name) ---
+# Open to any address, so they would defeat the allowlist. Disabled along with the built-ins once the scoped
+# RemoteAdmin rules exist. These are the ones vm-templates and proxmox-deploy create.
+ans_firewall_winrm_extra_rules:
+  - WinRM-HTTP
+  - WinRM-HTTPS
+
+# --- Linux: firewalld (RedHat family) ---
+# Off by default. Turn it on per group: hosts that run with firewalld off (RKE2 nodes) should stay off.
+ans_firewall_firewalld_enabled: false
+
+# Zone the rules go in: the zone of the host's interface.
+ans_firewall_firewalld_zone: public
+
+# Services allowed only from ans_firewall_ssh_ips (ans_firewall_mgmt_ips + ans_firewall_ssh_extra_ips).
+ans_firewall_firewalld_mgmt_services:
+  - ssh
+
+# Services taken out of the zone, so they are no longer open to any address.
+ans_firewall_firewalld_remove_services:
+  - ssh
+  - cockpit

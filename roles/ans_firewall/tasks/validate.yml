@@ -1,0 +1,12 @@
+---
+# roles/ans_firewall/tasks/validate.yml
+
+- name: DEFOS | Firewall | Check each allowlist entry is an IPv4 address or CIDR range
+  ansible.builtin.assert:
+    that:
+      - item is match('^(?:[0-9]{1,3}[.]){3}[0-9]{1,3}(?:/[0-9]{1,2})?$')
+      - item.split('/')[0].split('.') | map('int') | max <= 255
+      - (item.split('/')[1] | default(32) | int) <= 32
+    fail_msg: "Not an IPv4 address or CIDR range: {{ item }}"
+    quiet: true
+  loop: "{{ (ans_firewall_mgmt_ips + ans_firewall_ssh_ips + ans_firewall_mssql_ips) | unique }}"
