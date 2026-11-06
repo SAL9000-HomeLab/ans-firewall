@@ -35,6 +35,8 @@ All variables live in `defaults/main.yml` and are prefixed `ans_firewall_`.
 | Variable | Default | Purpose |
 | --- | --- | --- |
 | `ans_firewall_mgmt_ips` | `[]` (required) | IPv4 addresses or CIDR ranges allowed in. Set it on the AWX inventory or group; the role fails when it is empty and a rule set using it is enabled. |
+| `ans_firewall_rdp_extra_ips` | `[]` | Added on top of `ans_firewall_mgmt_ips` for RDP on port 3389 only, e.g. the Kubernetes nodes a remote desktop gateway connects from. Not used for the Shadow rule, which allows any port on `svchost.exe`. |
+| `ans_firewall_rdp_ips` | `(ans_firewall_mgmt_ips + ans_firewall_rdp_extra_ips) \| unique` | Remote-address scope for the RDP rules on port 3389. |
 | `ans_firewall_ssh_extra_ips` | `[]` | Added on top of `ans_firewall_mgmt_ips` for SSH, e.g. a monitoring server. |
 | `ans_firewall_ssh_ips` | `(ans_firewall_mgmt_ips + ans_firewall_ssh_extra_ips) \| unique` | Remote-address scope for the SSH rule. |
 | `ans_firewall_profile` | `[Domain, Private, Public]` | Firewall profiles every managed rule applies to. |
@@ -87,7 +89,8 @@ All variables live in `defaults/main.yml` and are prefixed `ans_firewall_`.
 On Windows, `tasks/windows.yml` runs, in order:
 
 1. `validate.yml` — checks the allowlists are set and each entry is an IPv4 address or CIDR range.
-2. `rdp-rules.yml` — RDP (TCP/UDP 3389 + Shadow), scoped to `ans_firewall_mgmt_ips`.
+2. `rdp-rules.yml` — RDP on TCP/UDP 3389, scoped to `ans_firewall_rdp_ips`, and Shadow, scoped to
+   `ans_firewall_mgmt_ips`.
 3. `remoteadmin-rules.yml` — Task Scheduler, WinRM, Remote Volume Management, Remote Event Log,
    Remote Service Management, Windows Firewall remote management, File & Printer Sharing, ICMP echo.
    Scoped to `ans_firewall_mgmt_ips`.

@@ -9,4 +9,4 @@
       - (item.split('/')[1] | default(32) | int) <= 32
     fail_msg: "Not an IPv4 address or CIDR range: {{ item }}"
     quiet: true
-  loop: "{{ (ans_firewall_mgmt_ips + ans_firewall_ssh_ips + ans_firewall_mssql_ips) | unique }}"
+  loop: "{{ (ans_firewall_mgmt_ips + ans_firewall_rdp_ips + ans_firewall_ssh_ips + ans_firewall_mssql_ips) | unique }}"
